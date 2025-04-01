@@ -70,9 +70,6 @@ Use the **Run script** action (from **Excel Online (Business)**) in Power Automa
 
        outputs('Get_Flow_as_Admin')?['body/properties/definition']
 
-![Run Script](images/run_script.png)
-
-*This screenshot shows the Run OfficeScript connector configuration with the required parameters.*
 
 ---
 
