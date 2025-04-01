@@ -1,4 +1,4 @@
-# OfficeScript Mermaid Diagram Generator
+# Power Automate Flows to Mermaid Diagrams with OfficeScript
 
 This repository contains an OfficeScript function that generates a Mermaid diagram from a flow definition (in JSON format) retrieved via Power Automate. The diagram visualizes the flow—including actions and dependencies—using enhanced styling with Mermaid subgraphs for conditions, switches, and scopes.
 
