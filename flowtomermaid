@@ -23,7 +23,7 @@ function main(workbook: ExcelScript.Workbook, flowJson: string): string {
     throw new Error("Invalid structure. Actions not found.");
   }
 
-  // **Initialize the Mermaid diagram with the configuration block**
+  // Initialize the Mermaid diagram with the enhanced configuration block
   let mermaidDiagram: { content: string } = {
     content: `---
 config:
@@ -42,7 +42,7 @@ graph TD
   // Mapping from action name to its last nodes
   const actionLastNodesMap: { [actionName: string]: string[] } = {};
 
-  // **Global map of all actions with their full paths**
+  // Global map of all actions with their full paths
   const globalActionsMap: { [key: string]: { action: Action; fullPath: string[] } } = {};
 
   // Function to generate unique and sanitized node identifiers based on action names
@@ -83,29 +83,33 @@ graph TD
     return Object.keys(runAfter);
   }
 
-  // Function to determine style based on action type
-  function getStyleForActionType(actionType: string): { fill: string; stroke: string; shape: string } {
-    const styleMap: { [key: string]: { fill: string; stroke: string; shape: string } } = {
-      If: { fill: "#FFE0B2", stroke: "#FF6D00", shape: "diamond" },
-      Switch: { fill: "#BBDEFB", stroke: "#2962FF", shape: "diamond" },
-      Foreach: { fill: "#C8E6C9", stroke: "#00C853", shape: "rectangle" },
-      Until: { fill: "#C8E6C9", stroke: "#00C853", shape: "rectangle" },
-      SetVariable: { fill: "#FFF9C4", stroke: "#FFEB3B", shape: "rectangle" },
-      Scope: { fill: "#BBDEFB", stroke: "#2962FF", shape: "rectangle" },
-      Terminate: { fill: "#FFCDD2", stroke: "#C62828", shape: "rectangle" },
-      RunScript: { fill: "#B3E5FC", stroke: "#0277BD", shape: "rectangle" },
-      SendEmail: { fill: "#FFECB3", stroke: "#FFA000", shape: "rectangle" },
-      Compose: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" },
-      Response: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" },
-      InitializeVariable: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" },
-      OpenApiConnection: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" },
-      Http: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" },
+  // Improved function to determine style based on action type
+  function getStyleForActionType(actionType: string): { fill: string; stroke: string; shape: string; className: string } {
+    const styleMap: { [key: string]: { fill: string; stroke: string; shape: string; className: string } } = {
+      If: { fill: "#FFE0B2", stroke: "#FF6D00", shape: "diamond", className: "If" },
+      Switch: { fill: "#BBDEFB", stroke: "#2962FF", shape: "diamond", className: "Switch" },
+      Foreach: { fill: "#C8E6C9", stroke: "#00C853", shape: "rectangle", className: "Foreach" },
+      Until: { fill: "#C8E6C9", stroke: "#00C853", shape: "rectangle", className: "Until" },
+      SetVariable: { fill: "#FFF9C4", stroke: "#FFEB3B", shape: "rectangle", className: "SetVariable" },
+      Scope: { fill: "#BBDEFB", stroke: "#2962FF", shape: "rectangle", className: "Scope" },
+      Terminate: { fill: "#FFCDD2", stroke: "#C62828", shape: "rectangle", className: "Terminate" },
+      RunScript: { fill: "#B3E5FC", stroke: "#0277BD", shape: "rectangle", className: "RunScript" },
+      SendEmail: { fill: "#FFECB3", stroke: "#FFA000", shape: "rectangle", className: "SendEmail" },
+      Compose: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "Compose" },
+      Response: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "Response" },
+      InitializeVariable: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "InitializeVariable" },
+      AppendToStringVariable: { fill: "#FFF9C4", stroke: "#FFEB3B", shape: "rectangle", className: "SetVariable" },
+      OpenApiConnection: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "OpenApiConnection" },
+      Http: { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "Http" },
+      Expression: { fill: "#E1BEE7", stroke: "#8E24AA", shape: "rectangle", className: "Expression" },
+      Workflow: { fill: "#FFCCBC", stroke: "#E64A19", shape: "rectangle", className: "Workflow" },
       // Add more styles as needed
     };
-    return styleMap[actionType] || { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle" };
+
+    return styleMap[actionType] || { fill: "#FFFFFF", stroke: "#000000", shape: "rectangle", className: "Default" };
   }
 
-  // **Function to build the global actions map**
+  // Function to build the global actions map
   function buildGlobalActionsMap(actions: ActionsMap, parentPath: string[] = []): void {
     for (const actionName in actions) {
       const action = actions[actionName];
@@ -138,7 +142,7 @@ graph TD
     }
   }
 
-  // **Build the global actions map before processing**
+  // Build the global actions map before processing
   buildGlobalActionsMap(actions);
 
   // Define the Start node first
@@ -146,16 +150,16 @@ graph TD
   mermaidDiagram.content += `${startId}((Start))\n`;
   mermaidDiagram.content += `style ${startId} fill:#C8E6C9,stroke:#00C853,stroke-width:2px;\n`;
 
-  // **Helper function to get actions in order**
+  // Helper function to get actions in order
   function getOrderedActionNames(actions: ActionsMap): string[] {
     return Object.keys(actions);
   }
 
-  // **Find actions with no dependencies (runAfter is empty)**
+  // Find actions with no dependencies (runAfter is empty)
   const actionNames: string[] = getOrderedActionNames(actions);
   const startingActions: string[] = actionNames.filter(actionName => getDependencies(actions[actionName]).length === 0);
 
-  // **Connect Start node to starting action nodes**
+  // Connect Start node to starting action nodes
   if (startingActions.length > 0) {
     for (let startActionName of startingActions) {
       const startActionId: string = getNodeIdentifier(startActionName);
@@ -178,13 +182,6 @@ graph TD
    * 3. Connecting from dependencies to this node.
    * 4. Processing child actions (if any).
    * 5. Storing the last nodes of this action.
-   *
-   * @param actionName - The name of the action to process.
-   * @param actions - The current actions map.
-   * @param mermaidDiagram - The Mermaid diagram content.
-   * @param processedActions - Map to track processed actions.
-   * @param parentPath - The path of action names leading to this action.
-   * @returns Array of last node IDs for the action.
    */
   function processAction(
     actionName: string,
@@ -209,12 +206,12 @@ graph TD
     }
     processedActions[actionName] = true;
 
-    // **Process Dependencies First**
+    // Process Dependencies First
     const dependencies: string[] = getDependencies(action);
     let dependencyLastNodes: string[] = [];
 
     dependencies.forEach((depName) => {
-      // **Find the dependency action in the global actions map**
+      // Find the dependency action in the global actions map
       if (!globalActionsMap.hasOwnProperty(depName)) {
         logWarning(`Dependency "${depName}" of action "${actionName}" not found in global actions map.`);
         return;
@@ -222,7 +219,7 @@ graph TD
       const depInfo = globalActionsMap[depName];
       const depAction = depInfo.action;
 
-      // **Check if dependency is valid (i.e., not creating a circular dependency)**
+      // Check if dependency is valid (i.e., not creating a circular dependency)
       if (processedActions[depName]) {
         // Dependency already processed
       } else {
@@ -247,28 +244,30 @@ graph TD
       }
     });
 
-    // **Determine style based on action type**
+    // Determine style based on action type
     const style = getStyleForActionType(action.type);
     const nodeShape = style.shape;
+    const className = style.className;
 
-    // **Process different action types**
+    // Process different action types
     let lastNodes: string[] = [];
     switch (action.type) {
       case "If":
-        // The node will be defined inside the subgraph
+        // Create condition action with proper styling
         lastNodes = processConditionAction(actionName, action as ConditionAction, mermaidDiagram, processedActions, parentPath);
         break;
       case "Switch":
-        // The node will be defined inside the subgraph
+        // Create switch action with proper styling
         lastNodes = processSwitchAction(actionName, action as SwitchAction, mermaidDiagram, processedActions, parentPath);
         break;
       case "Foreach":
       case "Until":
       case "Scope":
+        // Create scope-like actions with proper styling
         lastNodes = processScopeAction(actionName, action, mermaidDiagram, processedActions, parentPath);
         break;
       default:
-        // **Define the node with label and shape**
+        // Define the node with label and shape
         if (action.type === "Start") {
           mermaidDiagram.content += `${nodeId}((Start))\n`;
         } else {
@@ -283,18 +282,17 @@ graph TD
           }
         }
 
-        // **Assign class based on action type**
-        const className: string = action.type.replace(/\s+/g, "_");
+        // Apply class to the node
         mermaidDiagram.content += `class ${nodeId} ${className};\n`;
 
-        // **Define classDef if not already defined**
+        // Define classDef if not already defined
         if (!definedClasses.has(className)) {
           mermaidDiagram.content += `classDef ${className} fill:${style.fill},stroke:${style.stroke},stroke-width:2px;\n`;
           definedClasses.add(className);
           logInfo(`Defined class ${className}`);
         }
 
-        // **Process child actions if any**
+        // Process child actions if any
         if (action.actions && Object.keys(action.actions).length > 0) {
           let childLastNodes: string[] = [];
           for (let childActionName in action.actions) {
@@ -322,16 +320,15 @@ graph TD
         break;
     }
 
-    // **Store last nodes for this action**
+    // Store last nodes for this action
     actionLastNodesMap[actionName] = lastNodes;
-
     logInfo(`Action "${actionName}" has last nodes: ${lastNodes.join(", ")}`);
 
     return lastNodes;
   }
 
   /**
-   * Function to process If actions and encapsulate them within a subgraph
+   * Enhanced function to process If actions and encapsulate them within a more visually appealing subgraph
    */
   function processConditionAction(
     actionName: string,
@@ -343,24 +340,16 @@ graph TD
     const nodeId: string = getNodeIdentifier(actionName);
     const nodeLabel: string = sanitizeLabel(actionName);
 
-    // **Start of subgraph for If Condition**
+    // Start of subgraph for If Condition with improved styling
     mermaidDiagram.content += `subgraph "${nodeLabel} [If Condition]"\n`;
     logInfo(`Started subgraph for If Condition: ${nodeLabel}`);
 
-    // **Define the condition node inside the subgraph**
+    // Define the condition node inside the subgraph
     const style = getStyleForActionType(action.type);
-    const nodeShape = style.shape;
-    if (nodeShape === "diamond") {
-      mermaidDiagram.content += `${nodeId}{{${nodeLabel}}}\n`;
-    } else if (nodeShape === "rectangle") {
-      mermaidDiagram.content += `${nodeId}[${nodeLabel}]\n`;
-    } else {
-      mermaidDiagram.content += `${nodeId}(${nodeLabel})\n`;
-    }
+    mermaidDiagram.content += `${nodeId}{{${nodeLabel}}}\n`;
+    mermaidDiagram.content += `class ${nodeId} ${style.className};\n`;
 
-    mermaidDiagram.content += `class ${nodeId} ${action.type.replace(/\s+/g, "_")};\n`;
-
-    // **Process 'ifTrue' branch**
+    // Process 'ifTrue' branch
     let trueLastNodes: string[] = [];
     if (action.actions && Object.keys(action.actions).length > 0) {
       let isFirstTrueAction = true;
@@ -385,12 +374,11 @@ graph TD
         trueLastNodes = trueLastNodes.concat(trueChildLastNodes);
       }
     } else {
-      // If no actions in 'ifTrue' branch, last node is the condition node
       trueLastNodes.push(nodeId);
       logWarning(`No actions found in 'ifTrue' branch of "${actionName}". Treating condition node as last node.`);
     }
 
-    // **Process 'ifFalse' branch**
+    // Process 'ifFalse' branch
     let falseLastNodes: string[] = [];
     if (action.else && action.else.actions && Object.keys(action.else.actions).length > 0) {
       let isFirstFalseAction = true;
@@ -415,28 +403,26 @@ graph TD
         falseLastNodes = falseLastNodes.concat(falseChildLastNodes);
       }
     } else {
-      // If no actions in 'ifFalse' branch, last node is the condition node
       falseLastNodes.push(nodeId);
       logWarning(`No actions found in 'ifFalse' branch of "${actionName}". Treating condition node as last node.`);
     }
 
-    // **End of subgraph**
+    // End of subgraph
     mermaidDiagram.content += `end\n`;
     logInfo(`Ended subgraph for If Condition: ${nodeLabel}`);
 
     // The last nodes are the union of last nodes from both branches
     const lastNodes: string[] = trueLastNodes.concat(falseLastNodes);
 
-    // **Store last nodes for this condition action**
+    // Store last nodes for this condition action
     actionLastNodesMap[actionName] = lastNodes;
-
     logInfo(`Condition "${actionName}" has last nodes: ${lastNodes.join(", ")}`);
 
     return lastNodes;
   }
 
   /**
-   * Function to process Switch actions and encapsulate them within a subgraph
+   * Enhanced function to process Switch actions and encapsulate them within a more visually appealing subgraph
    */
   function processSwitchAction(
     actionName: string,
@@ -448,47 +434,18 @@ graph TD
     const nodeId: string = getNodeIdentifier(actionName);
     const nodeLabel: string = sanitizeLabel(actionName);
 
-    // **Start of subgraph for Switch Condition**
+    // Start of subgraph for Switch Condition with improved styling
     mermaidDiagram.content += `subgraph "${nodeLabel} [Switch Condition]"\n`;
     logInfo(`Started subgraph for Switch Condition: ${nodeLabel}`);
 
-    // **Define the switch node inside the subgraph**
+    // Define the switch node inside the subgraph
     const style = getStyleForActionType(action.type);
-    const nodeShape = style.shape;
-    if (nodeShape === "diamond") {
-      mermaidDiagram.content += `${nodeId}{{${nodeLabel}}}\n`;
-    } else if (nodeShape === "rectangle") {
-      mermaidDiagram.content += `${nodeId}[${nodeLabel}]\n`;
-    } else {
-      mermaidDiagram.content += `${nodeId}(${nodeLabel})\n`;
-    }
-
-    mermaidDiagram.content += `class ${nodeId} ${action.type.replace(/\s+/g, "_")};\n`;
+    mermaidDiagram.content += `${nodeId}{{${nodeLabel}}}\n`;
+    mermaidDiagram.content += `class ${nodeId} ${style.className};\n`;
 
     let lastNodes: string[] = [];
 
-    // **Process Default Case**
-    if (action.default && action.default.actions && Object.keys(action.default.actions).length > 0) {
-      for (let defaultActionName in action.default.actions) {
-        const defaultActionId: string = getNodeIdentifier(defaultActionName);
-        const connection: string = `${nodeId} -- Default --> ${defaultActionId}\n`;
-        if (!addedConnections.has(connection)) {
-          mermaidDiagram.content += connection;
-          addedConnections.add(connection);
-          logInfo(`Connected ${nodeId} to ${defaultActionId} (Default case)`);
-        }
-        const defaultChildLastNodes: string[] = processAction(
-          defaultActionName,
-          action.default.actions,
-          mermaidDiagram,
-          processedActions,
-          parentPath.concat(actionName)
-        );
-        lastNodes = lastNodes.concat(defaultChildLastNodes);
-      }
-    }
-
-    // **Process Each Case**
+    // Process Each Case
     if (action.cases && Object.keys(action.cases).length > 0) {
       for (let caseName in action.cases) {
         const caseBranch: CaseBranch = action.cases[caseName];
@@ -517,7 +474,6 @@ graph TD
           }
           lastNodes = lastNodes.concat(caseLastNodes);
         } else {
-          // If no actions in this case, the last node is the condition node
           lastNodes.push(nodeId);
           logWarning(`No actions found in case "${caseName}" of "${actionName}". Treating condition node as last node.`);
         }
@@ -526,20 +482,40 @@ graph TD
       logWarning(`No cases found in "${actionName}".`);
     }
 
-    // **End of subgraph**
+    // Process Default Case
+    if (action.default && action.default.actions && Object.keys(action.default.actions).length > 0) {
+      for (let defaultActionName in action.default.actions) {
+        const defaultActionId: string = getNodeIdentifier(defaultActionName);
+        const connection: string = `${nodeId} -- Default --> ${defaultActionId}\n`;
+        if (!addedConnections.has(connection)) {
+          mermaidDiagram.content += connection;
+          addedConnections.add(connection);
+          logInfo(`Connected ${nodeId} to ${defaultActionId} (Default case)`);
+        }
+        const defaultChildLastNodes: string[] = processAction(
+          defaultActionName,
+          action.default.actions,
+          mermaidDiagram,
+          processedActions,
+          parentPath.concat(actionName)
+        );
+        lastNodes = lastNodes.concat(defaultChildLastNodes);
+      }
+    }
+
+    // End of subgraph
     mermaidDiagram.content += `end\n`;
     logInfo(`Ended subgraph for Switch Condition: ${nodeLabel}`);
 
-    // **Store last nodes for this switch action**
+    // Store last nodes for this switch action
     actionLastNodesMap[actionName] = lastNodes;
-
     logInfo(`Switch "${actionName}" has last nodes: ${lastNodes.join(", ")}`);
 
     return lastNodes;
   }
 
   /**
-   * Function to process Scope-like actions (Foreach, Until, Scope)
+   * Enhanced function to process Scope-like actions with improved visual styling
    */
   function processScopeAction(
     actionName: string,
@@ -551,22 +527,14 @@ graph TD
     const nodeId: string = getNodeIdentifier(actionName);
     const nodeLabel: string = sanitizeLabel(actionName);
 
-    // **Start of subgraph for Scope**
+    // Start of subgraph for Scope with improved styling
     mermaidDiagram.content += `subgraph "${nodeLabel} [${action.type}]"\n`;
     logInfo(`Started subgraph for Scope: ${nodeLabel}`);
 
-    // **Define the scope node inside the subgraph**
+    // Define the scope node inside the subgraph
     const style = getStyleForActionType(action.type);
-    const nodeShape = style.shape;
-    if (nodeShape === "diamond") {
-      mermaidDiagram.content += `${nodeId}{{${nodeLabel}}}\n`;
-    } else if (nodeShape === "rectangle") {
-      mermaidDiagram.content += `${nodeId}[${nodeLabel}]\n`;
-    } else {
-      mermaidDiagram.content += `${nodeId}(${nodeLabel})\n`;
-    }
-
-    mermaidDiagram.content += `class ${nodeId} ${action.type.replace(/\s+/g, "_")};\n`;
+    mermaidDiagram.content += `${nodeId}[${nodeLabel}]\n`;
+    mermaidDiagram.content += `class ${nodeId} ${style.className};\n`;
 
     let lastNodes: string[] = [];
 
@@ -600,27 +568,66 @@ graph TD
       logWarning(`No child actions found in Scope "${actionName}". Treating condition node as last node.`);
     }
 
-    // **End of subgraph**
+    // End of subgraph
     mermaidDiagram.content += `end\n`;
     logInfo(`Ended subgraph for Scope: ${nodeLabel}`);
 
-    // **Store last nodes for this scope action**
+    // Store last nodes for this scope action
     actionLastNodesMap[actionName] = lastNodes;
-
     logInfo(`Scope "${actionName}" has last nodes: ${lastNodes.join(", ")}`);
 
     return lastNodes;
   }
 
-  // **Function to build the global actions map**
-  // (Already defined above)
-
-  // **Build the global actions map before processing**
-  // (Already done above)
-
-  // **Process each action**
+  // Process each action
   for (let actionName of actionNames) {
     processAction(actionName, actions, mermaidDiagram, processedActions, []);
+  }
+
+  // Add default class definitions for all common action types
+  if (!definedClasses.has('If')) {
+    mermaidDiagram.content += `classDef If fill:#FFE0B2,stroke:#FF6D00,stroke-width:2px;\n`;
+    definedClasses.add('If');
+  }
+  if (!definedClasses.has('Switch')) {
+    mermaidDiagram.content += `classDef Switch fill:#BBDEFB,stroke:#2962FF,stroke-width:2px;\n`;
+    definedClasses.add('Switch');
+  }
+  if (!definedClasses.has('Foreach')) {
+    mermaidDiagram.content += `classDef Foreach fill:#C8E6C9,stroke:#00C853,stroke-width:2px;\n`;
+    definedClasses.add('Foreach');
+  }
+  if (!definedClasses.has('Until')) {
+    mermaidDiagram.content += `classDef Until fill:#C8E6C9,stroke:#00C853,stroke-width:2px;\n`;
+    definedClasses.add('Until');
+  }
+  if (!definedClasses.has('SetVariable')) {
+    mermaidDiagram.content += `classDef SetVariable fill:#FFF9C4,stroke:#FFEB3B,stroke-width:2px;\n`;
+    definedClasses.add('SetVariable');
+  }
+  if (!definedClasses.has('Scope')) {
+    mermaidDiagram.content += `classDef Scope fill:#BBDEFB,stroke:#2962FF,stroke-width:2px;\n`;
+    definedClasses.add('Scope');
+  }
+  if (!definedClasses.has('Terminate')) {
+    mermaidDiagram.content += `classDef Terminate fill:#FFCDD2,stroke:#C62828,stroke-width:2px;\n`;
+    definedClasses.add('Terminate');
+  }
+  if (!definedClasses.has('InitializeVariable')) {
+    mermaidDiagram.content += `classDef InitializeVariable fill:#FFFFFF,stroke:#000000,stroke-width:2px;\n`;
+    definedClasses.add('InitializeVariable');
+  }
+  if (!definedClasses.has('OpenApiConnection')) {
+    mermaidDiagram.content += `classDef OpenApiConnection fill:#FFFFFF,stroke:#000000,stroke-width:2px;\n`;
+    definedClasses.add('OpenApiConnection');
+  }
+  if (!definedClasses.has('Expression')) {
+    mermaidDiagram.content += `classDef Expression fill:#E1BEE7,stroke:#8E24AA,stroke-width:2px;\n`;
+    definedClasses.add('Expression');
+  }
+  if (!definedClasses.has('Workflow')) {
+    mermaidDiagram.content += `classDef Workflow fill:#FFCCBC,stroke:#E64A19,stroke-width:2px;\n`;
+    definedClasses.add('Workflow');
   }
 
   // Return the diagram content
