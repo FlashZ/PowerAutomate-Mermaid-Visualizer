@@ -190,11 +190,6 @@ Contributions to enhance functionality or fix issues are welcome! Please open an
 
 ---
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
 
 ## Support
 If you'd like to support my work:
